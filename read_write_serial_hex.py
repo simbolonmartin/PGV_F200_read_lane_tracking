@@ -60,11 +60,14 @@ class PGVCommunication():
         self.number_of_lanes = int(byte_2_binary[2]) * 2 + int(byte_2_binary[3])
         # print(f'number_of_lanes: {number_of_lanes}')
         self.angle_value = self.result_read[10] * multiplier + self.result_read[11]
+        if self.angle_value > 180 :
+            self.angle_value = - (360-self.angle_value)
         y_position_unsigned = self.result_read[6] * multiplier + self.result_read[7]
         if y_position_unsigned > 0x2000:
             self.y_position = -1 * int(0x4000 - y_position_unsigned)
         else:
             self.y_position = int(y_position_unsigned)
+        self.tracking_result = [self.number_of_lanes, self.angle_value, self.y_position]
 
     def stream_value(self):
         """View all the tracking lane values information (angle_value, y_position, number_of_lanes)
@@ -74,14 +77,27 @@ class PGVCommunication():
                 self.send_message(self.position_value)
                 self.read_message()
                 self.calculate()
-                print(f'angle_value: {self.angle_value} \t y_position: {self.y_position}') #TODO: comment this on deployment
-                time.sleep(0.05)
+                # self.print_result_read()
+                # print(f'angle_value: {self.angle_value} \t y_position: {self.y_position} \t number_of_lanes: {self.number_of_lanes}') #TODO: comment this on deployment
+                time.sleep(0.1) #TODO: check this if it is enough to have a good movement result
         except Exception as error:
             print (error)
         finally:
             self.serial_channel.close()
 
+    def update_value(self):
+        try:
+            self.send_message(self.position_value)
+            self.read_message()
+            self.calculate()
+            time.sleep(0.1)
+        except Exception as error:
+            print(error)
+        
+    
+
 
 if __name__ == "__main__":
     PGVCommunicationObject = PGVCommunication()
     PGVCommunicationObject.stream_value()
+    # PGVCommunicationObject.print_result_read()
