@@ -2,8 +2,12 @@ import serial
 import time
 
 class PGVCommunication():
-    usb_port = "COM5"
-    baud_rate = 115200
+       
+    def __init__(self) -> None:
+        self.usb_port = "COM5"
+        self.baud_rate = 115200
+        self.check_connection()
+        self.initialize_message()
 
     def check_connection(self):
         try:
@@ -19,10 +23,15 @@ class PGVCommunication():
         self.request_red = [0x90, 0x6F]
 
     def send_message(self, message):
+        """Send message to the PGV
+
+        Args:
+            message (hex): the message that will be sent to the PGV
+        """
         self.result_write = self.serial_channel.write(message)
         # print(f'result_write: {self.result_write}')
 
-    def receive_message(self):
+    def read_message(self):
         # print("reading message")
         self.result_read = self.serial_channel.read(21)
         # self.result_read_hex =self.result_read.hex()
@@ -30,7 +39,6 @@ class PGVCommunication():
         # print(f'hex access index 0: {repr(chr(self.result_read[0]))}')
         # print(f'hex access index 1: {self.result_read[1]}')
         # print(f'hex access index -1: {self.result_read[-1]}')
-
         # print(f'length: {len(self.result_read_hex)}')
     
     def print_result_read(self):
@@ -42,6 +50,8 @@ class PGVCommunication():
             counter += 1
 
     def calculate(self):
+        """Calculate the angle value, y_position, and number of lanes detected.
+        """
         multiplier = 0x80
         byte_2_binary = bin(self.result_read[1])[2:].zfill(8)
         # print(f"len binary =  {len(byte_2_binary)}")
@@ -57,13 +67,14 @@ class PGVCommunication():
             self.y_position = int(y_position_unsigned)
 
     def stream_value(self):
+        """View all the tracking lane values information (angle_value, y_position, number_of_lanes)
+        """
         try:
             while True:
                 self.send_message(self.position_value)
-                self.receive_message()
+                self.read_message()
                 self.calculate()
-                print(f'angle_value: {self.angle_value} \t y_position: {self.y_position} \t number_of_lanes: {self.number_of_lanes}') #TODO: comment this on deployment
-
+                print(f'angle_value: {self.angle_value} \t y_position: {self.y_position}') #TODO: comment this on deployment
                 time.sleep(0.05)
         except Exception as error:
             print (error)
@@ -73,10 +84,4 @@ class PGVCommunication():
 
 if __name__ == "__main__":
     PGVCommunicationObject = PGVCommunication()
-    PGVCommunicationObject.check_connection()
-    PGVCommunicationObject.initialize_message()
-    # PGVCommunicationObject.send_message(PGVCommunicationObject.position_value)
-    # PGVCommunicationObject.receive_message()
-    # PGVCommunicationObject.print_result_read()
-    # PGVCommunicationObject.calculate()
     PGVCommunicationObject.stream_value()
