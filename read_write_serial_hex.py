@@ -4,10 +4,12 @@ import time
 class PGVCommunication():
        
     def __init__(self) -> None:
-        self.usb_port = "COM5"
+        # self.usb_port = "/dev/ttyUSB1"
+        self.usb_port = "/dev/pgv_sensor"
         self.baud_rate = 115200
         self.check_connection()
         self.initialize_message()
+        self.trigger_sensor()
 
     def check_connection(self):
         try:
@@ -21,6 +23,7 @@ class PGVCommunication():
         self.request_blue = [0xC4, 0x3B]
         self.request_green = [0x88, 0x77]
         self.request_red = [0x90, 0x6F]
+        self.follow_left_lane = [0xE8, 0x17]
 
     def send_message(self, message):
         """Send message to the PGV
@@ -58,7 +61,7 @@ class PGVCommunication():
         # print(f"index_2 =  {byte_2_binary[2]}")
         # print(f"index_2 =  {byte_2_binary[3]}")
         self.number_of_lanes = int(byte_2_binary[2]) * 2 + int(byte_2_binary[3])
-        # print(f'number_of_lanes: {number_of_lanes}')
+        # print(f'number_of_lanes: {self.number_of_lanes}')
         self.angle_value = self.result_read[10] * multiplier + self.result_read[11]
         if self.angle_value > 180 :
             self.angle_value = - (360-self.angle_value)
@@ -68,11 +71,30 @@ class PGVCommunication():
         else:
             self.y_position = int(y_position_unsigned)
         self.tracking_result = [self.number_of_lanes, self.angle_value, self.y_position]
+        # print(self.tracking_result)
+    
+    def trigger_sensor(self):
+        try:
+            self.send_message(self.request_blue)
+            time.sleep(0.1)
+            self.send_message(self.follow_left_lane)
+            time.sleep(1)
+        except Exception as error:
+            print(error)
+        finally:
+            self.serial_channel.close()
+            time.sleep(1)
+            self.check_connection()
+            time.sleep(1)
 
     def stream_value(self):
         """View all the tracking lane values information (angle_value, y_position, number_of_lanes)
         """
         try:
+            # self.send_message(self.request_blue)
+            # time.sleep(0.1)
+            # self.send_message(self.follow_left_lane)
+            # time.sleep(3)
             while True:
                 self.send_message(self.position_value)
                 self.read_message()
@@ -80,6 +102,8 @@ class PGVCommunication():
                 # self.print_result_read()
                 # print(f'angle_value: {self.angle_value} \t y_position: {self.y_position} \t number_of_lanes: {self.number_of_lanes}') #TODO: comment this on deployment
                 time.sleep(0.1) #TODO: check this if it is enough to have a good movement result
+                if __name__ == "__main__":
+                    print(f'number_of_lanes: {self.number_of_lanes} \t angle_value: {self.angle_value} \t y_position: {self.y_position}')
         except Exception as error:
             print (error)
         finally:
@@ -94,10 +118,7 @@ class PGVCommunication():
         except Exception as error:
             print(error)
         
-    
-
-
 if __name__ == "__main__":
     PGVCommunicationObject = PGVCommunication()
     PGVCommunicationObject.stream_value()
-    # PGVCommunicationObject.print_result_read()
+    

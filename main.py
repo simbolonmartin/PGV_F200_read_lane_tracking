@@ -28,8 +28,7 @@ for a in range(0,1000):
     PGV.update_value()   #TODO: make this a thread?
     steering_wheel_controller(PGV.number_of_lanes, PGV.angle_value, PGV.y_position)
     print(f'number_of_lanes: {PGV.number_of_lanes} \t angle_value: {PGV.angle_value} \t y_position: {PGV.y_position} \t velocity: {velocity} \trotation_speed: {rotation_speed}')
-    # for index, value in enumerate(PGV.tracking_result):
-    #     print(f" {index} : {value}")
+
         
 
 
